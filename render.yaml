@@ -7,7 +7,7 @@ services:
     name: peoplecoin-api
     runtime: docker
     region: oregon
-    plan: starter
+    plan: free  # Free tier: 512MB RAM, shared CPU
     dockerfilePath: ./backend/Dockerfile.render
     dockerContext: ./backend
     envVars:
@@ -85,7 +85,7 @@ services:
     name: peoplecoin-frontend
     runtime: docker
     region: oregon
-    plan: starter
+    plan: free  # Free tier: 512MB RAM, shared CPU
     dockerfilePath: ./apps/frontend/Dockerfile.render
     dockerContext: ./apps/frontend
     envVars:
@@ -108,7 +108,7 @@ databases:
     databaseName: peoplecoin
     user: peoplecoin
     region: oregon
-    plan: starter
+    plan: free  # Free tier plan
     ipAllowList: []
 
 # Redis is defined as a separate service type in Render
