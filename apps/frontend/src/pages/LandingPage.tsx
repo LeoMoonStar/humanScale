@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, TrendingUp, Users, Sparkles } from 'lucide-react';
+import { TrendingUp, Users, Sparkles } from 'lucide-react';
 import Lottie from 'lottie-react';
+import { WalletConnectButton } from '../components/WalletConnect';
 
 export function LandingPage() {
   const [showAnimation, setShowAnimation] = useState(true);
@@ -89,13 +90,7 @@ export function LandingPage() {
                   </p>
 
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Link
-                      to="/dashboard"
-                      className="px-10 py-5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold text-xl hover:shadow-2xl hover:scale-105 transition-all flex items-center gap-3 group"
-                    >
-                      Connect Wallet
-                      <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
-                    </Link>
+                    <WalletConnectButton />
                     <Link
                       to="/search"
                       className="px-10 py-5 bg-white text-gray-900 rounded-xl font-semibold text-xl border-2 border-gray-200 hover:border-blue-600 hover:shadow-xl transition-all"

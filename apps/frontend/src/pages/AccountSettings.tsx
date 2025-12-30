@@ -5,7 +5,6 @@ import {
   Bell,
   Shield,
   Lock,
-  Mail,
   Link as LinkIcon,
   Camera,
   Save,

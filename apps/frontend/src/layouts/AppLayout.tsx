@@ -119,7 +119,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="min-h-screen flex flex-col bg-[var(--bg-app)]">
       {/* Global Header */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-[var(--border-color)] h-[var(--header-height)] w-full">
-        <div className="h-full flex items-center justify-between flex-nowrap min-w-0 w-full px-6" style={{ color: 'var(--primary)', backgroundColor: 'rgba(230, 163, 163, 1)' }}>
+        <div className="h-full flex items-center justify-between flex-nowrap min-w-0 w-full px-6">
           
           {/* Left: Brand */}
           <div className="flex items-center flex-shrink-0">
@@ -147,14 +147,6 @@ export function AppLayout({ children }: AppLayoutProps) {
                 />
               </div>
               <Link to="/dashboard" className="btn-ghost font-medium text-[var(--primary)] bg-blue-50 whitespace-nowrap">Dashboard</Link>
-            </div>
-            <div className="hidden md:flex items-center bg-gray-100 rounded-full px-3 py-1.5 max-w-[256px] min-w-[200px] border border-transparent focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-blue-100 transition-all">
-              <Search size={16} className="text-gray-400 flex-shrink-0" />
-              <input 
-                type="text" 
-                placeholder="Search markets..." 
-                className="bg-transparent border-none outline-none text-sm ml-2 w-full text-[var(--text-main)] placeholder-gray-400 min-w-0"
-              />
             </div>
 
             <div className="relative" ref={notificationsRef}>
