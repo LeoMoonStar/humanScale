@@ -37,16 +37,11 @@ services:
           property: database
       - key: DB_SSLMODE
         value: require
-      - key: REDIS_HOST
-        fromService:
-          type: redis
-          name: peoplecoin-redis
-          property: host
-      - key: REDIS_PORT
-        fromService:
-          type: redis
-          name: peoplecoin-redis
-          property: port
+      # Redis - Add manually via Render Dashboard if needed
+      # - key: REDIS_HOST
+      #   sync: false
+      # - key: REDIS_PORT
+      #   value: 6379
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
@@ -116,9 +111,5 @@ databases:
     plan: starter
     ipAllowList: []
 
-  # Redis Cache
-  - name: peoplecoin-redis
-    region: oregon
-    plan: starter
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
+# Redis is defined as a separate service type in Render
+# Redis-specific configs like maxmemoryPolicy must be set via Render Dashboard after creation
