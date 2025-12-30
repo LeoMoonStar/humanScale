@@ -57,12 +57,12 @@ Thumbs.db
 .eslintignore
 .prettierignore
 
-# TypeScript
-tsconfig.json
-tsconfig.node.json
+# TypeScript - Keep tsconfig files, they're needed for build!
+# tsconfig.json - NEEDED for build
+# tsconfig.node.json - NEEDED for build
 
-# Vite
-vite.config.ts
+# Vite - Keep vite.config.ts, needed for build!
+# vite.config.ts - NEEDED for build
 
 # Docker
 Dockerfile*
