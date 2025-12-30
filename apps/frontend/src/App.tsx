@@ -8,6 +8,7 @@ import { CreatorDetail } from './pages/CreatorDetail';
 import { ApplyCreator } from './pages/ApplyCreator';
 import { SignDocuments } from './pages/SignDocuments';
 import { InviteCreator } from './pages/InviteCreator';
+import { AccountSettings } from './pages/AccountSettings';
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
           <Route path="/feed" element={<Feed />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/settings" element={<AccountSettings />} />
           <Route path="/creator/:id" element={<CreatorDetail />} />
           <Route path="/invite/:name" element={<InviteCreator />} />
           <Route path="/apply" element={<ApplyCreator />} />

@@ -5,54 +5,57 @@ import {
   Wallet,
   Clock,
   ChevronRight,
-  X,
   Download,
-  Flame
+  Flame,
+  Award,
+  Star,
+  Activity
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export function Dashboard() {
   return (
     <div className="max-w-[1280px] mx-auto">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-h1 mb-2">Trading Dashboard</h1>
-        <p className="text-subtle text-lg">Monitor markets, execute trades, and stay informed with trending insights.</p>
+        <h1 className="text-h1 mb-2">Your Dashboard</h1>
+        <p className="text-subtle text-lg">Track your investments, monitor creator performance, and discover opportunities.</p>
       </div>
 
-      {/* Alert/News Banner */}
-      <div className="mb-8 bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-center justify-between shadow-sm relative overflow-hidden group">
+      {/* Alert/Achievement Banner */}
+      <div className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-lg p-4 flex items-center justify-between shadow-sm relative overflow-hidden group">
         <div className="flex items-center gap-3 relative z-10">
-          <div className="bg-white p-2 rounded-full shadow-sm text-orange-500">
-            <Flame size={20} fill="currentColor" className="opacity-90" />
+          <div className="bg-white p-2 rounded-full shadow-sm text-purple-600">
+            <Award size={20} className="opacity-90" />
           </div>
           <div>
             <p className="font-semibold text-[var(--text-main)]">
-              Top 1 from Harvard Law, ready to enter the Top law firm in Manhattan
+              Sarah Chen just achieved Top 1% in AI Research - Your investment is up 12.5%!
             </p>
             <div className="flex items-center gap-3 mt-1 text-xs text-[var(--text-secondary)]">
-              <span>12.5K Views</span>
+              <span>125K Community Reactions</span>
               <span>•</span>
-              <span>342 Comments</span>
+              <span>2.4K New Investors</span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-4 relative z-10">
           <span className="badge badge-success flex items-center gap-1">
             <TrendingUp size={12} />
-            +5.3%
+            +12.5%
           </span>
-          <button className="text-blue-600 font-medium text-sm hover:underline flex items-center gap-1">
-            Read More <ChevronRight size={14} />
-          </button>
+          <Link to="/creator/1" className="text-blue-600 font-medium text-sm hover:underline flex items-center gap-1">
+            View Profile <ChevronRight size={14} />
+          </Link>
         </div>
         <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-white/40 to-transparent pointer-events-none"></div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Main Content Area (Left 2 Columns) */}
         <div className="lg:col-span-2 space-y-8">
-          
+
           {/* Portfolio Summary */}
           <div className="card p-6">
             <div className="flex items-center justify-between mb-6">
@@ -64,136 +67,126 @@ export function Dashboard() {
             </div>
 
             <div className="flex flex-col md:flex-row items-center gap-8 mb-8">
-              {/* Donut Chart Visual */}
-              <div className="relative w-48 h-48 flex-shrink-0">
-                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                  {/* Background Circle */}
-                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f3f4f6" strokeWidth="12" />
-                  {/* Segments (Simulated) */}
-                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f97316" strokeWidth="12" strokeDasharray="100 251" strokeDashoffset="0" className="opacity-90 hover:opacity-100 transition-opacity" /> {/* BTC ~40% */}
-                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="#3b82f6" strokeWidth="12" strokeDasharray="75 251" strokeDashoffset="-100" className="opacity-90 hover:opacity-100 transition-opacity" /> {/* ETH ~30% */}
-                  <circle cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" strokeWidth="12" strokeDasharray="50 251" strokeDashoffset="-175" className="opacity-90 hover:opacity-100 transition-opacity" /> {/* Others ~20% */}
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-sm text-[var(--text-muted)]">Total Value</span>
-                  <span className="text-2xl font-bold text-[var(--text-main)]">$12,450</span>
-                  <span className="text-xs text-emerald-500 font-medium flex items-center mt-1">
-                    <ArrowUpRight size={12} /> +2.4%
-                  </span>
+              {/* Balance Change Display with Chart */}
+              <div className="w-full md:w-64 flex-shrink-0 bg-gradient-to-br from-emerald-50 to-blue-50 rounded-xl p-6 border border-emerald-100">
+                <div className="mb-4">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Previous Balance</p>
+                  <p className="text-lg font-semibold text-[var(--text-secondary)]">$12,150</p>
+                </div>
+                <div className="mb-4">
+                  <p className="text-xs text-[var(--text-muted)] mb-1">Current Balance</p>
+                  <p className="text-2xl font-bold text-[var(--text-main)]">$12,450</p>
+                </div>
+                <div className="pt-4 border-t border-emerald-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-[var(--text-muted)]">24h Change</p>
+                    <span className="text-sm font-bold text-emerald-600 flex items-center gap-1">
+                      <ArrowUpRight size={14} /> +$300
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-[var(--text-muted)]">Change %</p>
+                    <span className="text-sm font-bold text-emerald-600">+2.4%</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Legend */}
-              <div className="flex-1 grid grid-cols-2 gap-4 w-full">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                    <span className="font-medium text-sm">Bitcoin</span>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm">0.45 BTC</p>
-                    <p className="text-xs text-[var(--text-muted)]">$4,980</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                    <span className="font-medium text-sm">Ethereum</span>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm">2.1 ETH</p>
-                    <p className="text-xs text-[var(--text-muted)]">$3,735</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                    <span className="font-medium text-sm">USDT</span>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm">2,500 USDT</p>
-                    <p className="text-xs text-[var(--text-muted)]">$2,500</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-                    <span className="font-medium text-sm">Others</span>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-sm">-</p>
-                    <p className="text-xs text-[var(--text-muted)]">$1,235</p>
-                  </div>
+              {/* Your Investments */}
+              <div className="flex-1 w-full">
+                <h3 className="text-sm font-semibold text-[var(--text-main)] mb-4">Your Investments</h3>
+                <div className="space-y-3">
+                  {[
+                    {
+                      id: '1',
+                      name: 'Sarah Chen',
+                      title: 'AI Research Scientist',
+                      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+                      tokenSymbol: 'SARAH',
+                      tokenAmount: '200',
+                      value: '$4,980',
+                      change: '+12.5%',
+                      changePositive: true
+                    },
+                    {
+                      id: '2',
+                      name: 'Alex Rodriguez',
+                      title: 'Tech Entrepreneur',
+                      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+                      tokenSymbol: 'ALEX',
+                      tokenAmount: '150',
+                      value: '$3,735',
+                      change: '+8.2%',
+                      changePositive: true
+                    },
+                    {
+                      id: '3',
+                      name: 'Maria Garcia',
+                      title: 'Climate Scientist',
+                      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria',
+                      tokenSymbol: 'MARIA',
+                      tokenAmount: '100',
+                      value: '$2,500',
+                      change: '-1.2%',
+                      changePositive: false
+                    },
+                    {
+                      id: '4',
+                      name: 'David Kim',
+                      title: 'Software Engineer',
+                      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+                      tokenSymbol: 'DAVID',
+                      tokenAmount: '50',
+                      value: '$1,235',
+                      change: '+3.5%',
+                      changePositive: true
+                    }
+                  ].map((creator) => (
+                    <Link
+                      key={creator.id}
+                      to={`/creator/${creator.id}`}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-white hover:border-blue-200 hover:shadow-md transition-all group"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <img
+                          src={creator.avatar}
+                          alt={creator.name}
+                          className="w-10 h-10 rounded-full border-2 border-white shadow-sm flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-[var(--text-main)] truncate">{creator.name}</p>
+                          <p className="text-xs text-[var(--text-muted)] truncate">{creator.title}</p>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0 ml-4">
+                        <p className="font-bold text-sm text-[var(--text-main)]">{creator.value}</p>
+                        <p className={`text-xs font-medium ${creator.changePositive ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {creator.change}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-4 gap-4 border-t border-[var(--border-color)] pt-6">
               <div>
-                <p className="text-xs text-[var(--text-muted)] mb-1">24h Volume</p>
-                <p className="text-lg font-bold">$1.2M</p>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Total Invested</p>
+                <p className="text-lg font-bold">$12,450</p>
               </div>
               <div>
-                <p className="text-xs text-[var(--text-muted)] mb-1">Total Trades</p>
-                <p className="text-lg font-bold">142</p>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Creators Backed</p>
+                <p className="text-lg font-bold">4</p>
               </div>
               <div>
-                <p className="text-xs text-[var(--text-muted)] mb-1">Win Rate</p>
-                <p className="text-lg font-bold text-emerald-600">68%</p>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Avg. Return</p>
+                <p className="text-lg font-bold text-emerald-600">+7.5%</p>
               </div>
               <div>
-                <p className="text-xs text-[var(--text-muted)] mb-1">Avg. Profit</p>
-                <p className="text-lg font-bold text-emerald-600">+$240</p>
+                <p className="text-xs text-[var(--text-muted)] mb-1">Best Performer</p>
+                <p className="text-lg font-bold text-emerald-600">+12.5%</p>
               </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-             {/* Following List */}
-            <div className="card p-6">
-              <h3 className="text-h3 mb-4">Following</h3>
-              <div className="space-y-3">
-                {[
-                  { sym: 'BTC', name: 'Bitcoin', price: '$42,390', change: '+1.2%', up: true },
-                  { sym: 'ETH', name: 'Ethereum', price: '$2,240', change: '-0.8%', up: false },
-                  { sym: 'SOL', name: 'Solana', price: '$98.50', change: '+4.5%', up: true },
-                  { sym: 'BNB', name: 'Binance', price: '$312.00', change: '-0.2%', up: false },
-                ].map((coin) => (
-                  <div key={coin.sym} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition-colors group">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white ${coin.sym === 'BTC' ? 'bg-orange-500' : coin.sym === 'ETH' ? 'bg-blue-500' : coin.sym === 'SOL' ? 'bg-purple-500' : 'bg-yellow-500'}`}>
-                        {coin.sym[0]}
-                      </div>
-                      <div>
-                        <p className="font-bold text-sm">{coin.sym}</p>
-                        <p className="text-xs text-[var(--text-muted)]">{coin.name}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-sm">{coin.price}</p>
-                      <p className={`text-xs font-medium ${coin.up ? 'text-emerald-500' : 'text-rose-500'}`}>
-                        {coin.change}
-                      </p>
-                    </div>
-                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="text-xs btn-primary py-1 px-3 h-7">Trade</button>
-                      <button className="ml-1 p-1 text-gray-400 hover:text-red-500"><X size={14} /></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Empty block for layout balance or ad could go here, extending Transactions mainly */}
-             <div className="card p-6 flex flex-col justify-center items-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white relative overflow-hidden">
-                <div className="relative z-10 text-center">
-                   <h3 className="text-2xl font-bold mb-2">Pro Analytics</h3>
-                   <p className="text-indigo-100 mb-6 text-sm">Unlock advanced charts and real-time data integration.</p>
-                   <button className="bg-white text-indigo-600 px-6 py-2 rounded-lg font-bold text-sm hover:shadow-lg transition-shadow">Upgrade Now</button>
-                </div>
-                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/20 rounded-full blur-3xl"></div>
-                <div className="absolute -top-10 -left-10 w-40 h-40 bg-purple-400/20 rounded-full blur-3xl"></div>
-             </div>
           </div>
 
           {/* Recent Transactions */}
@@ -210,19 +203,19 @@ export function Dashboard() {
                   <tr>
                     <th className="px-6 py-3 font-medium">Type</th>
                     <th className="px-6 py-3 font-medium">Status</th>
-                    <th className="px-6 py-3 font-medium">Asset</th>
-                    <th className="px-6 py-3 font-medium">Amount</th>
+                    <th className="px-6 py-3 font-medium">Creator</th>
+                    <th className="px-6 py-3 font-medium">Tokens</th>
                     <th className="px-6 py-3 font-medium">Price</th>
-                    <th className="px-6 py-3 font-medium">Fees</th>
+                    <th className="px-6 py-3 font-medium">Total</th>
                     <th className="px-6 py-3 font-medium text-right">Time</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border-color)]">
                   {[
-                    { type: 'Buy', status: 'Completed', asset: 'BTC', amount: '0.045', price: '$42,150', fees: '$12.50', time: '2 mins ago' },
-                    { type: 'Sell', status: 'Pending', asset: 'ETH', amount: '1.20', price: '$2,235', fees: '$4.20', time: '15 mins ago' },
-                    { type: 'Buy', status: 'Failed', asset: 'SOL', amount: '150.00', price: '$98.20', fees: '$0.00', time: '1 hour ago' },
-                    { type: 'Buy', status: 'Completed', asset: 'USDT', amount: '5,000', price: '$1.00', fees: '$1.00', time: '5 hours ago' },
+                    { type: 'Buy', status: 'Completed', creator: 'Sarah Chen', tokens: '50', price: '$24.90', total: '$1,245', time: '2 mins ago' },
+                    { type: 'Sell', status: 'Pending', creator: 'Alex Rodriguez', tokens: '20', price: '$24.90', total: '$498', time: '15 mins ago' },
+                    { type: 'Buy', status: 'Failed', creator: 'Maria Garcia', tokens: '30', price: '$25.00', total: '$750', time: '1 hour ago' },
+                    { type: 'Buy', status: 'Completed', creator: 'David Kim', tokens: '25', price: '$24.70', total: '$617.50', time: '5 hours ago' },
                   ].map((tx, i) => (
                     <tr key={i} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
@@ -238,10 +231,10 @@ export function Dashboard() {
                           {tx.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 font-medium">{tx.asset}</td>
-                      <td className="px-6 py-4">{tx.amount}</td>
+                      <td className="px-6 py-4 font-medium">{tx.creator}</td>
+                      <td className="px-6 py-4">{tx.tokens}</td>
                       <td className="px-6 py-4 text-[var(--text-secondary)]">{tx.price}</td>
-                      <td className="px-6 py-4 text-[var(--text-muted)]">{tx.fees}</td>
+                      <td className="px-6 py-4 font-semibold">{tx.total}</td>
                       <td className="px-6 py-4 text-right text-[var(--text-muted)]">{tx.time}</td>
                     </tr>
                   ))}
@@ -260,65 +253,146 @@ export function Dashboard() {
           <div className="card p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold flex items-center gap-2">
-                <TrendingUp size={20} className="text-[var(--primary)]" />
-                Trending Topics
+                <Flame size={20} className="text-orange-500" />
+                Trending Creators
               </h3>
-              <button className="text-sm text-blue-600 hover:underline">View All</button>
+              <Link to="/explore" className="text-sm text-blue-600 hover:underline">View All</Link>
             </div>
 
             <div className="space-y-6">
               {[
-                { rank: 1, title: "Bitcoin ETF Approval Likely This Week", tags: ["Regulation", "Crypto"], sentiment: "Bullish", views: "125K" },
-                { rank: 2, title: "Ethereum Layer 2 TVL Hits All-Time High", tags: ["DeFi", "L2"], sentiment: "Bullish", views: "98K" },
-                { rank: 3, title: "Stablecoin Regulation Talks in EU", tags: ["Regulation", "Euro"], sentiment: "Neutral", views: "82K" },
-                { rank: 4, title: "New AI Token Surges 500% Overnight", tags: ["AI", "Memecoin"], sentiment: "High Risk", views: "150K" },
-                { rank: 5, title: "Exchange Outage Reports Increasing", tags: ["Infra", "Alert"], sentiment: "Bearish", views: "45K" },
-              ].map((topic) => (
-                <div key={topic.rank} className="group cursor-pointer">
+                {
+                  rank: 1,
+                  name: "Sarah Chen",
+                  title: "AI Research Scientist - Published breakthrough paper on neural networks",
+                  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
+                  id: "1",
+                  tags: ["Tech", "AI"],
+                  sentiment: "Bullish",
+                  change: "+12.5%",
+                  investors: "2.4K"
+                },
+                {
+                  rank: 2,
+                  name: "Marcus Johnson",
+                  title: "Olympic Athlete - Won gold medal in 100m sprint",
+                  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus",
+                  id: "5",
+                  tags: ["Sports", "Olympics"],
+                  sentiment: "Bullish",
+                  change: "+18.2%",
+                  investors: "1.8K"
+                },
+                {
+                  rank: 3,
+                  name: "Elena Rodriguez",
+                  title: "Climate Activist - Led successful policy change initiative",
+                  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Elena",
+                  id: "6",
+                  tags: ["Environment", "Policy"],
+                  sentiment: "Bullish",
+                  change: "+9.7%",
+                  investors: "1.2K"
+                },
+                {
+                  rank: 4,
+                  name: "Alex Rodriguez",
+                  title: "Tech Entrepreneur - Raised Series B funding at $100M valuation",
+                  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
+                  id: "2",
+                  tags: ["Startup", "Tech"],
+                  sentiment: "Bullish",
+                  change: "+8.2%",
+                  investors: "950"
+                },
+                {
+                  rank: 5,
+                  name: "David Kim",
+                  title: "Software Engineer - Open source project reached 10K GitHub stars",
+                  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=David",
+                  id: "4",
+                  tags: ["OpenSource", "Dev"],
+                  sentiment: "Bullish",
+                  change: "+6.3%",
+                  investors: "720"
+                },
+              ].map((creator) => (
+                <Link
+                  key={creator.rank}
+                  to={`/creator/${creator.id}`}
+                  className="group cursor-pointer block"
+                >
                   <div className="flex items-start gap-3">
                     <span className="text-2xl font-bold text-gray-200 group-hover:text-[var(--primary)] transition-colors">
-                      {topic.rank}
+                      {creator.rank}
                     </span>
-                    <div>
-                      <h4 className="font-semibold text-[var(--text-main)] group-hover:text-blue-600 transition-colors leading-tight mb-2">
-                        {topic.title}
-                      </h4>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <img
+                          src={creator.avatar}
+                          alt={creator.name}
+                          className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
+                        />
+                        <div>
+                          <h4 className="font-bold text-sm text-[var(--text-main)] group-hover:text-blue-600 transition-colors">
+                            {creator.name}
+                          </h4>
+                        </div>
+                      </div>
+                      <p className="text-xs text-[var(--text-secondary)] leading-tight mb-2">
+                        {creator.title}
+                      </p>
                       <div className="flex flex-wrap items-center gap-2 mb-2">
-                        {topic.tags.map(tag => (
-                          <span key={tag} className="px-2 py-0.5 bg-gray-100 text-xs rounded text-[var(--text-secondary)]">#{tag}</span>
+                        {creator.tags.map(tag => (
+                          <span key={tag} className="px-2 py-0.5 bg-gray-100 text-xs rounded text-[var(--text-secondary)]">
+                            #{tag}
+                          </span>
                         ))}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-[var(--text-muted)]">
-                        <span className={`font-medium ${topic.sentiment === 'Bullish' ? 'text-emerald-500' : topic.sentiment === 'Bearish' ? 'text-rose-500' : 'text-amber-500'}`}>
-                          {topic.sentiment}
-                        </span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={12} /> 2h ago
-                        </span>
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="font-medium text-emerald-500">{creator.change}</span>
+                        <span className="text-[var(--text-muted)]">•</span>
+                        <span className="text-[var(--text-muted)]">{creator.investors} investors</span>
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
 
-            <button className="w-full btn-secondary mt-6 flex items-center justify-center gap-2">
-              Explore More Topics <ChevronRight size={16} />
-            </button>
+            <Link
+              to="/explore"
+              className="w-full btn-secondary mt-6 flex items-center justify-center gap-2"
+            >
+              Discover More Creators <ChevronRight size={16} />
+            </Link>
           </div>
 
-          <div className="card p-6 bg-gray-900 text-white border-gray-800">
-             <h3 className="font-bold mb-2">Market Sentiment</h3>
+          <div className="card p-6 bg-gradient-to-br from-blue-600 to-purple-600 text-white border-0">
+             <div className="flex items-center gap-2 mb-2">
+               <Activity size={20} />
+               <h3 className="font-bold">Platform Activity</h3>
+             </div>
              <div className="flex items-center gap-4 mb-4">
-               <div className="text-4xl font-bold text-emerald-400">72</div>
+               <div className="text-4xl font-bold">8.2K</div>
                <div>
-                 <p className="font-semibold text-emerald-100">Greed</p>
-                 <p className="text-xs text-gray-400">Previous: 68</p>
+                 <p className="font-semibold text-blue-100">Active Investors</p>
+                 <p className="text-xs text-blue-200">Last 24 hours</p>
                </div>
              </div>
-             <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
-               <div className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-emerald-500 w-[72%]"></div>
+             <div className="space-y-3 pt-4 border-t border-white/20">
+               <div className="flex items-center justify-between text-sm">
+                 <span className="text-blue-100">Total Volume</span>
+                 <span className="font-bold">$2.4M</span>
+               </div>
+               <div className="flex items-center justify-between text-sm">
+                 <span className="text-blue-100">New Creators</span>
+                 <span className="font-bold">+127</span>
+               </div>
+               <div className="flex items-center justify-between text-sm">
+                 <span className="text-blue-100">Avg. Token Price</span>
+                 <span className="font-bold">$24.82</span>
+               </div>
              </div>
           </div>
         </div>

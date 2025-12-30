@@ -301,38 +301,39 @@ export function Search() {
       </div>
 
       {/* Filters Section */}
-      <div className="mb-8 w-full">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-gray-100 text-[var(--text-secondary)] hover:bg-gray-200 transition-colors"
-            >
-              <Filter size={16} />
-              Filters
-              {activeFiltersCount > 0 && (
-                <span className="px-2 py-0.5 bg-[var(--primary)] text-white text-xs rounded-full">
-                  {activeFiltersCount}
-                </span>
-              )}
-            </button>
+      <div className="mb-8 w-full max-w-4xl mx-auto">
+        {/* Results Count - Centered Above Filters */}
+        <div className="text-center text-sm text-[var(--text-muted)] mb-4">
+          {filteredResults.length} creator{filteredResults.length !== 1 ? 's' : ''} found
+        </div>
+
+        {/* Filter Controls - Centered */}
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-gray-100 text-[var(--text-secondary)] hover:bg-gray-200 transition-colors"
+          >
+            <Filter size={16} />
+            Filters
             {activeFiltersCount > 0 && (
-              <button
-                onClick={() => {
-                  setSelectedCategory('All');
-                  setSelectedLocation('All');
-                  setSelectedIndustry('All');
-                }}
-                className="flex items-center gap-1 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
-              >
-                <X size={14} />
-                Clear all
-              </button>
+              <span className="px-2 py-0.5 bg-[var(--primary)] text-white text-xs rounded-full">
+                {activeFiltersCount}
+              </span>
             )}
-          </div>
-          <div className="text-sm text-[var(--text-muted)]">
-            {filteredResults.length} creator{filteredResults.length !== 1 ? 's' : ''} found
-          </div>
+          </button>
+          {activeFiltersCount > 0 && (
+            <button
+              onClick={() => {
+                setSelectedCategory('All');
+                setSelectedLocation('All');
+                setSelectedIndustry('All');
+              }}
+              className="flex items-center gap-1 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+            >
+              <X size={14} />
+              Clear all
+            </button>
+          )}
         </div>
 
         {/* Expanded Filters */}
@@ -403,8 +404,8 @@ export function Search() {
           </div>
         )}
 
-        {/* Quick Category Filter (Always Visible) */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
+        {/* Quick Category Filter (Always Visible) - Centered */}
+        <div className="flex items-center justify-center gap-2 flex-wrap pb-2">
           {categories.map(category => (
             <button
               key={category}
