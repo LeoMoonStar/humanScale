@@ -10,10 +10,10 @@ RUN apk add --no-cache git ca-certificates tzdata
 WORKDIR /build
 
 # Copy go mod files
-COPY go.mod go.sum ./
+COPY go.mod ./
 
-# Download dependencies (cached layer)
-RUN go mod download && go mod verify
+# Download dependencies (will generate go.sum automatically)
+RUN go mod download
 
 # Copy source code
 COPY . .
