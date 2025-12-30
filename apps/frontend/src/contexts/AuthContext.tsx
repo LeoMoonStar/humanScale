@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useCurrentAccount, useSignPersonalMessage } from '@mysten/dapp-kit';
-import { authApi, User } from '../lib/api';
+import { authApi } from '../lib/api';
+import type { User } from '../lib/api';
 
 interface AuthContextType {
   user: User | null;

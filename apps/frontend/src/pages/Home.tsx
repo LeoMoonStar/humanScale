@@ -4,9 +4,7 @@ import {
   TrendingUp,
   Wallet,
   Clock,
-  MoreHorizontal,
   ChevronRight,
-  X,
   Download,
   Flame
 } from 'lucide-react';

@@ -1,5 +1,6 @@
-import apiClient, { ApiResponse } from './client';
-import { User } from './auth';
+import apiClient from './client';
+import type { ApiResponse } from './client';
+import type { User } from './auth';
 
 // User Profile Types
 export interface UserProfile extends User {

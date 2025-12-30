@@ -4,7 +4,6 @@ import {
   User,
   Briefcase,
   DollarSign,
-  Calendar,
   FileText,
   Upload,
   CheckCircle,

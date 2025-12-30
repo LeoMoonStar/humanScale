@@ -1,12 +1,11 @@
-import { 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  TrendingUp, 
-  Wallet, 
-  Clock, 
-  MoreHorizontal, 
-  ChevronRight, 
-  X, 
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  TrendingUp,
+  Wallet,
+  Clock,
+  ChevronRight,
+  X,
   Download,
   Flame
 } from 'lucide-react';

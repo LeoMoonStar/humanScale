@@ -1,6 +1,5 @@
-import { Clock, Download, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Clock, Download, ArrowUpRight } from 'lucide-react';
 import { useTrades } from '../hooks/useApi';
-import { Trade } from '../lib/api';
 
 export function RecentTransactions() {
   const { data: tradesData, isLoading, error } = useTrades({ limit: 10 });

@@ -1,12 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  tokensApi,
-  ordersApi,
-  usersApi,
-  Token,
-  Order,
-  Trade,
-  Portfolio,
+import { tokensApi, ordersApi, usersApi } from '../lib/api';
+import type {
   CreateOrderRequest,
   TokensListParams,
 } from '../lib/api';
@@ -78,7 +72,7 @@ export function useTrendingTokens(limit?: number) {
 export function useTokenTrades(tokenId: string, limit?: number) {
   return useQuery({
     queryKey: queryKeys.tokens.trades(tokenId),
-    queryFn: () => tokensApi.getTokenTrades(tokenId, limit),
+    queryFn: () => ordersApi.getTokenTrades(tokenId, limit),
     enabled: !!tokenId,
     refetchInterval: 10000, // Refetch every 10 seconds
   });

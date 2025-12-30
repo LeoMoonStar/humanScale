@@ -1,4 +1,5 @@
-import apiClient, { ApiResponse } from './client';
+import apiClient from './client';
+import type { ApiResponse } from './client';
 
 // Token Types
 export interface Token {
