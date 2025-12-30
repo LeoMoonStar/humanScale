@@ -1,0 +1,54 @@
+# Root Monorepo .gitignore
+
+# Environment Variables (CRITICAL - Never commit!)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.sublime-workspace
+*.sublime-project
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build outputs (project-specific are in subdirectories)
+dist/
+build/
+
+# Dependencies (handled in subdirectories)
+node_modules/
+
+# Test coverage
+coverage/
+*.coverage
+
+# Misc
+.cache/

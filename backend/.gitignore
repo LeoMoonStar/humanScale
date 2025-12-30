@@ -1,0 +1,74 @@
+# Go Backend .gitignore
+
+# Environment Variables (CRITICAL - Never commit!)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Go Build Outputs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+api
+cmd/api/api
+
+# Go Test Files
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Go Vendor
+vendor/
+
+# Go Module Cache
+go.sum.backup
+
+# Database Files (Local development)
+*.db
+*.sqlite
+*.sqlite3
+data/
+pgdata/
+
+# Logs
+*.log
+logs/
+
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+
+# Air (hot reload) temporary files
+tmp/
+
+# Test Files
+testdata/
+*_test_output.txt
+
+# Profiling
+*.pprof
+*.prof
+
+# Docker local volumes (if any)
+.docker/

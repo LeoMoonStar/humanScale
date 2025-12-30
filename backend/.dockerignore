@@ -1,0 +1,59 @@
+# Backend .dockerignore
+# Excludes files from Docker build context to speed up builds
+
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+docs/
+
+# Development files
+.env
+.env.*
+!.env.example
+
+# Test files
+*_test.go
+testdata/
+coverage.out
+coverage.html
+
+# Build artifacts
+bin/
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.log
+
+# Docker
+Dockerfile*
+docker-compose.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Dependencies (will be downloaded during build)
+vendor/

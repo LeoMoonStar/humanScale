@@ -1,0 +1,124 @@
+# Render Blueprint for PeopleCoin Platform
+# This file defines all services for the monorepo deployment
+
+services:
+  # Backend API Service (Go)
+  - type: web
+    name: peoplecoin-api
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./backend/Dockerfile.render
+    dockerContext: ./backend
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: ENV
+        value: production
+      - key: DB_HOST
+        fromDatabase:
+          name: peoplecoin-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: peoplecoin-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: peoplecoin-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: peoplecoin-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: peoplecoin-db
+          property: database
+      - key: DB_SSLMODE
+        value: require
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: peoplecoin-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: peoplecoin-redis
+          property: port
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 3600
+      - key: JWT_REFRESH_EXPIRATION
+        value: 604800
+      - key: TYPESENSE_HOST
+        sync: false
+      - key: TYPESENSE_PORT
+        value: 8108
+      - key: TYPESENSE_PROTOCOL
+        value: https
+      - key: TYPESENSE_API_KEY
+        sync: false
+      - key: SUISCAN_API_URL
+        value: https://suiscan.xyz/api/sui
+      - key: COINGECKO_API_URL
+        value: https://api.coingecko.com/api/v3
+      - key: COINGECKO_API_KEY
+        sync: false
+      - key: SUI_RPC_URL
+        value: https://fullnode.mainnet.sui.io:443
+      - key: SUI_NETWORK
+        value: mainnet
+      - key: CORS_ALLOWED_ORIGINS
+        fromService:
+          type: web
+          name: peoplecoin-frontend
+          envVarKey: RENDER_EXTERNAL_URL
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+        - docs/**
+
+  # Frontend Application (React/Vite)
+  - type: web
+    name: peoplecoin-frontend
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./apps/frontend/Dockerfile.render
+    dockerContext: ./apps/frontend
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: peoplecoin-api
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - apps/frontend/**
+
+databases:
+  # PostgreSQL Database
+  - name: peoplecoin-db
+    databaseName: peoplecoin
+    user: peoplecoin
+    region: oregon
+    plan: starter
+    ipAllowList: []
+
+  # Redis Cache
+  - name: peoplecoin-redis
+    region: oregon
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
