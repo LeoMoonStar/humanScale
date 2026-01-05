@@ -26,7 +26,7 @@ module peoplecoin::insurance {
     const EInvalidAmount: u64 = 3;
 
     /// Insurance claim record
-    struct ClaimRecord has store, copy, drop {
+    public struct ClaimRecord has store, copy, drop {
         claim_id: u64,
         vault_id: ID,
         creator: address,
@@ -39,7 +39,7 @@ module peoplecoin::insurance {
     }
 
     /// Platform-wide insurance pool
-    struct InsurancePool has key {
+    public struct InsurancePool has key {
         id: UID,
 
         // Insurance fund
@@ -64,20 +64,20 @@ module peoplecoin::insurance {
     }
 
     /// Admin capability for insurance pool
-    struct InsuranceAdminCap has key, store {
+    public struct InsuranceAdminCap has key, store {
         id: UID,
         pool_id: ID,
     }
 
     /// Events
-    struct InsuranceFundsAdded has copy, drop {
+    public struct InsuranceFundsAdded has copy, drop {
         pool_id: ID,
         amount: u64,
         from_pool: ID,  // Which AMM pool contributed
         timestamp: u64,
     }
 
-    struct ClaimSubmitted has copy, drop {
+    public struct ClaimSubmitted has copy, drop {
         claim_id: u64,
         vault_id: ID,
         creator: address,
@@ -85,14 +85,14 @@ module peoplecoin::insurance {
         timestamp: u64,
     }
 
-    struct ClaimApproved has copy, drop {
+    public struct ClaimApproved has copy, drop {
         claim_id: u64,
         vault_id: ID,
         amount: u64,
         timestamp: u64,
     }
 
-    struct ClaimPaid has copy, drop {
+    public struct ClaimPaid has copy, drop {
         claim_id: u64,
         vault_id: ID,
         recipient: address,
@@ -108,15 +108,19 @@ module peoplecoin::insurance {
     ) {
         let platform_admin = tx_context::sender(ctx);
 
+        // Get initial fund value before moving
+        let initial_fund_value = coin::value(&initial_fund);
+        let fund_balance = coin::into_balance(initial_fund);
+
         let pool = InsurancePool {
             id: object::new(ctx),
-            fund_balance: coin::into_balance(initial_fund),
+            fund_balance,
             platform_admin,
             approval_threshold,
             claims: table::new(ctx),
             next_claim_id: 1,
             total_claims_paid: 0,
-            total_fees_collected: balance::value(&coin::into_balance(initial_fund)),
+            total_fees_collected: initial_fund_value,
             total_claims_submitted: 0,
             total_claims_approved: 0,
             created_at: tx_context::epoch(ctx),

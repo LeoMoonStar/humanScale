@@ -4,19 +4,24 @@ module peoplecoin::amm_tests {
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::object::{Self};
+    use sui::clock;
     use peoplecoin::amm::{Self, LiquidityPool, LPToken};
     use peoplecoin::insurance::{Self, InsurancePool};
+    use peoplecoin::creator_token::{Self, TokenRegistry};
 
     const ADMIN: address = @0xA;
     const LP_PROVIDER: address = @0xB;
     const TRADER: address = @0xC;
+    const CREATOR: address = @0xD;
 
     /// Test token
-    struct TEST_TOKEN has drop {}
+    public struct TEST_TOKEN has drop {}
 
     #[test]
+    /// Tests AMM liquidity pool creation with initial SUI and token reserves.
+    /// Verifies pool initialization, reserve balances, and LP token supply generation.
     fun test_create_pool() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         // Create insurance pool first
         {
@@ -34,7 +39,7 @@ module peoplecoin::amm_tests {
         {
             ts::next_tx(&mut scenario, LP_PROVIDER);
 
-            let insurance_pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut insurance_pool = ts::take_shared<InsurancePool>(&scenario);
             let pool_id = object::id(&insurance_pool);
 
             let sui = coin::mint_for_testing<SUI>(1_000_000, ts::ctx(&mut scenario));
@@ -55,7 +60,7 @@ module peoplecoin::amm_tests {
         {
             ts::next_tx(&mut scenario, LP_PROVIDER);
 
-            let pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
+            let mut pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
             let (sui_reserve, token_reserve, lp_supply, _, _) = amm::get_pool_info(&pool);
 
             assert!(sui_reserve == 1_000_000, 0);
@@ -69,8 +74,10 @@ module peoplecoin::amm_tests {
     }
 
     #[test]
+    /// Tests swapping SUI for tokens through the AMM pool.
+    /// Verifies correct token output amount, reserve updates, and quote accuracy.
     fun test_swap_sui_for_token() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         // Setup: Create insurance pool and AMM pool
         setup_pools(&mut scenario);
@@ -79,19 +86,23 @@ module peoplecoin::amm_tests {
         {
             ts::next_tx(&mut scenario, TRADER);
 
-            let pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
-            let insurance_pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
+            let mut insurance_pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut registry = ts::take_shared<TokenRegistry>(&scenario);
 
             let (sui_before, token_before, _, _, _) = amm::get_pool_info(&pool);
 
             let sui_in = coin::mint_for_testing<SUI>(10_000, ts::ctx(&mut scenario));
             let expected_out = amm::quote_sui_to_token(&pool, 10_000);
+            let clock = clock::create_for_testing(ts::ctx(&mut scenario));
 
             let tokens_out = amm::swap_sui_for_token(
                 &mut pool,
                 sui_in,
                 expected_out,  // min_token_out
                 &mut insurance_pool,
+                &registry,
+                &clock,
                 ts::ctx(&mut scenario)
             );
 
@@ -103,25 +114,29 @@ module peoplecoin::amm_tests {
             assert!(sui_after > sui_before, 1);
             assert!(token_after < token_before, 2);
 
+            clock::destroy_for_testing(clock);
             coin::burn_for_testing(tokens_out);
             ts::return_shared(pool);
             ts::return_shared(insurance_pool);
+            ts::return_shared(registry);
         };
 
         ts::end(scenario);
     }
 
     #[test]
+    /// Tests swapping tokens for SUI through the AMM pool.
+    /// Verifies correct SUI output amount, reserve changes, and quote calculation.
     fun test_swap_token_for_sui() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         setup_pools(&mut scenario);
 
         {
             ts::next_tx(&mut scenario, TRADER);
 
-            let pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
-            let insurance_pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
+            let mut insurance_pool = ts::take_shared<InsurancePool>(&scenario);
 
             let (sui_before, token_before, _, _, _) = amm::get_pool_info(&pool);
 
@@ -153,15 +168,17 @@ module peoplecoin::amm_tests {
     }
 
     #[test]
+    /// Tests adding liquidity to an existing AMM pool.
+    /// Verifies LP token minting and proportional reserve increases.
     fun test_add_liquidity() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         setup_pools(&mut scenario);
 
         {
             ts::next_tx(&mut scenario, LP_PROVIDER);
 
-            let pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
+            let mut pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
 
             let (_, _, lp_supply_before, _, _) = amm::get_pool_info(&pool);
 
@@ -186,27 +203,33 @@ module peoplecoin::amm_tests {
     }
 
     #[test]
+    /// Tests that AMM maintains constant product formula (x * y = k) after swaps.
+    /// Verifies k value increases slightly due to LP fees being added to reserves.
     fun test_constant_product_formula() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         setup_pools(&mut scenario);
 
         {
             ts::next_tx(&mut scenario, TRADER);
 
-            let pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
-            let insurance_pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
+            let mut insurance_pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut registry = ts::take_shared<TokenRegistry>(&scenario);
 
             let (sui_before, token_before, _, _, _) = amm::get_pool_info(&pool);
             let k_before = sui_before * token_before;
 
             // Swap
             let sui_in = coin::mint_for_testing<SUI>(1_000, ts::ctx(&mut scenario));
+            let clock = clock::create_for_testing(ts::ctx(&mut scenario));
             let tokens_out = amm::swap_sui_for_token(
                 &mut pool,
                 sui_in,
                 0,
                 &mut insurance_pool,
+                &registry,
+                &clock,
                 ts::ctx(&mut scenario)
             );
 
@@ -216,24 +239,28 @@ module peoplecoin::amm_tests {
             // k should increase slightly due to fees (0.4% goes to LPs)
             assert!(k_after >= k_before, 0);
 
+            clock::destroy_for_testing(clock);
             coin::burn_for_testing(tokens_out);
             ts::return_shared(pool);
             ts::return_shared(insurance_pool);
+            ts::return_shared(registry);
         };
 
         ts::end(scenario);
     }
 
     #[test]
+    /// Tests price impact and slippage on AMM trades of different sizes.
+    /// Verifies that larger trades receive worse exchange rates due to price impact.
     fun test_price_impact() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         setup_pools(&mut scenario);
 
         {
             ts::next_tx(&mut scenario, TRADER);
 
-            let pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
+            let mut pool = ts::take_shared<LiquidityPool<TEST_TOKEN>>(&scenario);
 
             // Small swap
             let small_out = amm::quote_sui_to_token(&pool, 1_000);
@@ -266,11 +293,38 @@ module peoplecoin::amm_tests {
             );
         };
 
+        // Create token registry
+        {
+            ts::next_tx(scenario, CREATOR);
+
+            creator_token::create_token_for_testing<TEST_TOKEN>(
+                8,  // decimals
+                b"TEST",
+                b"Test Token",
+                b"Test",
+                b"https://example.com/icon.png",
+                10_000_000,  // total_supply
+                3_000_000,   // creator_allocation
+                3_000_000,   // platform_reserve
+                4_000_000,   // liquidity_allocation
+                5,           // buyback_duration_years
+                0,           // buyback_start_date
+                3,           // buyback_interval_months
+                100000,      // buyback_amount_per_interval
+                0,           // trading_block_duration_days (no block) - u8
+                false,       // vesting_enabled
+                0,           // vesting_monthly_release_bps
+                0,           // vesting_total_release_bps
+                100,         // initial_price_usd
+                ts::ctx(scenario)
+            );
+        };
+
         // Create AMM pool
         {
             ts::next_tx(scenario, LP_PROVIDER);
 
-            let insurance_pool = ts::take_shared<InsurancePool>(scenario);
+            let mut insurance_pool = ts::take_shared<InsurancePool>(scenario);
             let pool_id = object::id(&insurance_pool);
 
             let sui = coin::mint_for_testing<SUI>(1_000_000, ts::ctx(scenario));

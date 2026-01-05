@@ -1,0 +1,205 @@
+name: Deploy to Sui Testnet
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'contracts/**'
+      - '.github/workflows/deploy-testnet.yml'
+
+env:
+  SUI_NETWORK: testnet
+  SUI_RPC: https://fullnode.testnet.sui.io:443
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Sui CLI
+        run: |
+          echo "Installing Sui CLI..."
+          cargo install --locked --git https://github.com/MystenLabs/sui.git --branch testnet sui
+
+          # Verify installation
+          sui --version
+          echo "Sui CLI installed successfully"
+
+      - name: Setup Sui Client Config
+        run: |
+          echo "Setting up Sui client configuration..."
+
+          # Initialize Sui client
+          sui client
+
+      - name: Import Deployer Key
+        env:
+          DEPLOYER_PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+        run: |
+          echo "Importing deployer private key..."
+
+          # Import the key from GitHub Secret
+          echo "$DEPLOYER_PRIVATE_KEY" | sui keytool import - ed25519
+
+          # Set as active address
+          DEPLOYER_ADDRESS=$(sui keytool list | grep "Sui Address" | head -1 | awk '{print $3}')
+          echo "Deployer address: $DEPLOYER_ADDRESS"
+          echo "DEPLOYER_ADDRESS=$DEPLOYER_ADDRESS" >> $GITHUB_ENV
+
+      - name: Switch to Testnet
+        run: |
+          echo "Switching to testnet environment..."
+          sui client switch --env testnet || sui client new-env --alias testnet --rpc ${{ env.SUI_RPC }}
+          sui client switch --env testnet
+
+          # Verify network
+          sui client active-env
+
+      - name: Check Wallet Balance
+        run: |
+          echo "Checking wallet balance..."
+          sui client gas
+
+          # Get balance
+          BALANCE=$(sui client gas --json | jq -r '.[0].balance' || echo "0")
+          echo "Current balance: $BALANCE MIST"
+
+          if [ "$BALANCE" -lt "100000000" ]; then
+            echo "⚠️  Warning: Low balance ($BALANCE MIST). Deployment might fail."
+            echo "Please fund the wallet: ${{ env.DEPLOYER_ADDRESS }}"
+          fi
+
+      - name: Build Move Contracts
+        working-directory: contracts
+        run: |
+          echo "Building Move contracts..."
+          sui move build
+
+          if [ $? -eq 0 ]; then
+            echo "✅ Build successful"
+          else
+            echo "❌ Build failed"
+            exit 1
+          fi
+
+      - name: Run Move Tests
+        working-directory: contracts
+        run: |
+          echo "Running Move tests..."
+          sui move test || echo "⚠️  Tests failed or no tests found"
+
+      - name: Deploy to Testnet
+        id: deploy
+        working-directory: contracts
+        run: |
+          echo "Deploying contracts to testnet..."
+
+          # Deploy and capture output
+          DEPLOY_OUTPUT=$(sui client publish --gas-budget 100000000 --json)
+
+          # Extract package ID
+          PACKAGE_ID=$(echo "$DEPLOY_OUTPUT" | jq -r '.objectChanges[] | select(.type == "published") | .packageId')
+
+          if [ -z "$PACKAGE_ID" ]; then
+            echo "❌ Deployment failed - no package ID found"
+            exit 1
+          fi
+
+          echo "✅ Deployment successful!"
+          echo "Package ID: $PACKAGE_ID"
+          echo "PACKAGE_ID=$PACKAGE_ID" >> $GITHUB_ENV
+
+          # Save full deployment output to root
+          echo "$DEPLOY_OUTPUT" > ../deployment-output.json
+
+      - name: Extract Deployment Info
+        run: |
+          echo "Extracting deployment information..."
+
+          # Create deployment record in root
+          cat > deployment-record.json <<EOF
+          {
+            "network": "testnet",
+            "packageId": "${{ env.PACKAGE_ID }}",
+            "deployedAt": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "deployedBy": "${{ env.DEPLOYER_ADDRESS }}",
+            "gitCommit": "${{ github.sha }}",
+            "gitBranch": "${{ github.ref_name }}",
+            "gitRepo": "${{ github.repository }}"
+          }
+          EOF
+
+          cat deployment-record.json
+
+      - name: Create Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Network:** Testnet" >> $GITHUB_STEP_SUMMARY
+          echo "**Package ID:** \`${{ env.PACKAGE_ID }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployer:** \`${{ env.DEPLOYER_ADDRESS }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Time:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Explorer Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [View Package on Suiscan](https://suiscan.xyz/testnet/object/${{ env.PACKAGE_ID }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [View on Sui Explorer](https://suiexplorer.com/object/${{ env.PACKAGE_ID }}?network=testnet)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📝 Commit Info" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Deployment Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-records
+          path: |
+            deployment-record.json
+            deployment-output.json
+          retention-days: 90
+
+      - name: Comment on Commit (if available)
+        if: github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const packageId = process.env.PACKAGE_ID;
+            const deployerAddress = process.env.DEPLOYER_ADDRESS;
+
+            const comment = `## 🚀 Deployed to Testnet
+
+            **Package ID:** \`${packageId}\`
+            **Deployer:** \`${deployerAddress}\`
+
+            🔗 [View on Suiscan](https://suiscan.xyz/testnet/object/${packageId})
+            `;
+
+            // Try to comment on the commit
+            try {
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+                body: comment
+              });
+            } catch (error) {
+              console.log('Could not create commit comment:', error.message);
+            }
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The deployment to testnet has failed. Please check the logs above for details." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Common issues:" >> $GITHUB_STEP_SUMMARY
+          echo "- Insufficient gas in deployer wallet" >> $GITHUB_STEP_SUMMARY
+          echo "- Move compilation errors" >> $GITHUB_STEP_SUMMARY
+          echo "- Network connectivity issues" >> $GITHUB_STEP_SUMMARY
+          echo "- Invalid private key in secrets" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,39 @@
+{
+  "name": "peoplecoin-wizard",
+  "version": "1.0.0",
+  "description": "Smart contract deployment wizard for PeopleCoin platform",
+  "main": "dist/scripts/deploy-wizard.js",
+  "scripts": {
+    "build": "tsc",
+    "sync:contracts": "ts-node scripts/utils/contract-sync.ts",
+    "wizard:init-platform": "ts-node scripts/deploy-wizard.ts init-platform",
+    "wizard:deploy": "ts-node scripts/deploy-wizard.ts deploy",
+    "test": "jest"
+  },
+  "keywords": ["sui", "blockchain", "token", "deployment", "wizard"],
+  "author": "PeopleCoin Team",
+  "license": "MIT",
+  "dependencies": {
+    "@mysten/sui.js": "^0.54.1",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "handlebars": "^4.7.8",
+    "chalk": "^4.1.2",
+    "ora": "^5.4.1",
+    "inquirer": "^8.2.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/handlebars": "^4.1.0",
+    "@types/inquirer": "^8.2.10",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "@types/jest": "^29.5.11",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

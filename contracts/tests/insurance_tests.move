@@ -10,8 +10,10 @@ module peoplecoin::insurance_tests {
     const CREATOR: address = @0xC;
 
     #[test]
+    /// Tests insurance pool initialization with initial funding.
+    /// Verifies pool balance, fee tracking, and admin capability creation.
     fun test_create_insurance_pool() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         {
             ts::next_tx(&mut scenario, ADMIN);
@@ -27,7 +29,7 @@ module peoplecoin::insurance_tests {
         {
             ts::next_tx(&mut scenario, ADMIN);
 
-            let pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<InsurancePool>(&scenario);
             let (balance, fees, claims_paid, submitted, approved) = insurance::get_pool_status(&pool);
 
             assert!(balance == 100_000_000, 0);
@@ -43,8 +45,10 @@ module peoplecoin::insurance_tests {
     }
 
     #[test]
+    /// Tests adding additional funds to existing insurance pool.
+    /// Verifies balance updates and fee accumulation after deposits.
     fun test_add_insurance_funds() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         {
             ts::next_tx(&mut scenario, ADMIN);
@@ -56,7 +60,7 @@ module peoplecoin::insurance_tests {
         {
             ts::next_tx(&mut scenario, ADMIN);
 
-            let pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<InsurancePool>(&scenario);
             let additional_fund = coin::mint_for_testing<SUI>(50_000_000, ts::ctx(&mut scenario));
 
             insurance::add_insurance_funds(&mut pool, additional_fund);
@@ -72,8 +76,10 @@ module peoplecoin::insurance_tests {
     }
 
     #[test]
+    /// Tests insurance claim submission and admin approval workflow.
+    /// Verifies claim creation, approval process, and payout to claimant.
     fun test_submit_and_approve_claim() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         {
             ts::next_tx(&mut scenario, ADMIN);
@@ -88,7 +94,7 @@ module peoplecoin::insurance_tests {
         {
             ts::next_tx(&mut scenario, CREATOR);
 
-            let pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<InsurancePool>(&scenario);
             let vault_id = object::id_from_address(@0x123);
 
             claim_id = insurance::submit_claim(
@@ -112,7 +118,7 @@ module peoplecoin::insurance_tests {
         {
             ts::next_tx(&mut scenario, ADMIN);
 
-            let pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<InsurancePool>(&scenario);
             let admin_cap = ts::take_from_sender<InsuranceAdminCap>(&scenario);
 
             insurance::approve_claim(&mut pool, &admin_cap, claim_id, ts::ctx(&mut scenario));
@@ -128,8 +134,10 @@ module peoplecoin::insurance_tests {
     }
 
     #[test]
+    /// Tests automatic processing of small claims below approval threshold.
+    /// Verifies claims under threshold are paid out immediately without admin approval.
     fun test_auto_process_small_claim() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         {
             ts::next_tx(&mut scenario, ADMIN);
@@ -148,7 +156,7 @@ module peoplecoin::insurance_tests {
         {
             ts::next_tx(&mut scenario, CREATOR);
 
-            let pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<InsurancePool>(&scenario);
             let vault_id = object::id_from_address(@0x123);
 
             claim_id = insurance::submit_claim(
@@ -167,7 +175,7 @@ module peoplecoin::insurance_tests {
         {
             ts::next_tx(&mut scenario, CREATOR);
 
-            let pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<InsurancePool>(&scenario);
 
             let (balance_before, _, _, _, _) = insurance::get_pool_status(&pool);
 
@@ -186,9 +194,11 @@ module peoplecoin::insurance_tests {
     }
 
     #[test]
+    /// Tests that large claims above threshold cannot be auto-processed.
+    /// Verifies auto-processing fails for claims requiring admin approval.
     #[expected_failure]
     fun test_cannot_auto_process_large_claim() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         {
             ts::next_tx(&mut scenario, ADMIN);
@@ -207,7 +217,7 @@ module peoplecoin::insurance_tests {
         {
             ts::next_tx(&mut scenario, CREATOR);
 
-            let pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<InsurancePool>(&scenario);
             let vault_id = object::id_from_address(@0x123);
 
             claim_id = insurance::submit_claim(
@@ -226,7 +236,7 @@ module peoplecoin::insurance_tests {
         {
             ts::next_tx(&mut scenario, CREATOR);
 
-            let pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<InsurancePool>(&scenario);
 
             insurance::auto_process_claim(&mut pool, claim_id, ts::ctx(&mut scenario));
 
@@ -237,8 +247,10 @@ module peoplecoin::insurance_tests {
     }
 
     #[test]
+    /// Tests the has_sufficient_funds() check for insurance pool solvency.
+    /// Verifies pool can correctly report whether it has enough balance to cover claims.
     fun test_has_sufficient_funds() {
-        let scenario = ts::begin(ADMIN);
+        let mut scenario = ts::begin(ADMIN);
 
         {
             ts::next_tx(&mut scenario, ADMIN);
@@ -250,7 +262,7 @@ module peoplecoin::insurance_tests {
         {
             ts::next_tx(&mut scenario, ADMIN);
 
-            let pool = ts::take_shared<InsurancePool>(&scenario);
+            let mut pool = ts::take_shared<InsurancePool>(&scenario);
 
             assert!(insurance::has_sufficient_funds(&pool, 50_000_000), 0);
             assert!(insurance::has_sufficient_funds(&pool, 100_000_000), 1);

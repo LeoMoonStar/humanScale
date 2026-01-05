@@ -28,7 +28,7 @@ module peoplecoin::distribution {
     const EAllDistributed: u64 = 4;
 
     /// Distribution schedule milestone
-    struct DistributionMilestone has store, copy, drop {
+    public struct DistributionMilestone has store, copy, drop {
         milestone_number: u64,
         release_timestamp: u64,  // When tokens can be released
         release_amount: u64,  // Tokens to release
@@ -37,7 +37,7 @@ module peoplecoin::distribution {
     }
 
     /// Distribution vault holding reserve tokens
-    struct DistributionVault<phantom T> has key {
+    public struct DistributionVault<phantom T> has key {
         id: UID,
         token_registry_id: ID,
         platform_address: address,  // Platform admin address
@@ -64,13 +64,13 @@ module peoplecoin::distribution {
     }
 
     /// Capability to manage distributions
-    struct DistributionAdminCap has key, store {
+    public struct DistributionAdminCap has key, store {
         id: UID,
         vault_id: ID,
     }
 
     /// Events
-    struct TokensDistributed has copy, drop {
+    public struct TokensDistributed has copy, drop {
         vault_id: ID,
         milestone_number: u64,
         amount: u64,
@@ -78,7 +78,7 @@ module peoplecoin::distribution {
         timestamp: u64,
     }
 
-    struct DistributionCompleted has copy, drop {
+    public struct DistributionCompleted has copy, drop {
         vault_id: ID,
         total_distributed: u64,
         timestamp: u64,
@@ -112,8 +112,8 @@ module peoplecoin::distribution {
         let release_per_milestone = total_reserve / total_milestones;
 
         // Create distribution schedule
-        let milestones = vector::empty<DistributionMilestone>();
-        let i = 0;
+        let mut milestones = vector::empty<DistributionMilestone>();
+        let mut i = 0;
         while (i < total_milestones) {
             let milestone = DistributionMilestone {
                 milestone_number: i + 1,
@@ -170,11 +170,16 @@ module peoplecoin::distribution {
 
         assert!(milestone_idx < vector::length(&vault.milestones), EAllDistributed);
 
+        // Get vault data before mutable borrow
+        let vault_id = object::id(vault);
+        let platform_address = vault.platform_address;
+
         let milestone = vector::borrow_mut(&mut vault.milestones, milestone_idx);
         assert!(current_time >= milestone.release_timestamp, EDistributionNotReady);
         assert!(!milestone.released, EDistributionNotReady);
 
         let release_amount = milestone.release_amount;
+        let milestone_number = milestone.milestone_number;
         assert!(balance::value(&vault.reserve_balance) >= release_amount, EInsufficientReserve);
 
         // Extract tokens from reserve
@@ -188,10 +193,10 @@ module peoplecoin::distribution {
 
         // Emit event
         event::emit(TokensDistributed {
-            vault_id: object::id(vault),
-            milestone_number: milestone.milestone_number,
+            vault_id,
+            milestone_number,
             amount: release_amount,
-            recipient: vault.platform_address,
+            recipient: platform_address,
             timestamp: current_time,
         });
 

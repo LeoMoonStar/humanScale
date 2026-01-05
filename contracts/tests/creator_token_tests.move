@@ -1,19 +1,20 @@
 #[test_only]
 module peoplecoin::creator_token_tests {
-    use sui::test_scenario::{Self as ts, Scenario};
-    use sui::coin::{Self, TreasuryCap};
-    use peoplecoin::creator_token::{Self, TokenRegistry, TEST_TOKEN};
+    use sui::test_scenario::{Self as ts};
+    use peoplecoin::creator_token::{Self, TokenRegistry};
     use std::string;
 
     const CREATOR: address = @0xC;
     const INVESTOR: address = @0xD;
 
     /// Test witness for testing
-    struct TEST_CREATOR_TOKEN has drop {}
+    public struct TEST_CREATOR_TOKEN has drop {}
 
     #[test]
+    /// Tests successful creator token creation with valid allocations.
+    /// Verifies token registry initialization and metadata storage (name, symbol, supply, price).
     fun test_create_token_success() {
-        let scenario = ts::begin(CREATOR);
+        let mut scenario = ts::begin(CREATOR);
 
         // Create token
         {
@@ -24,8 +25,7 @@ module peoplecoin::creator_token_tests {
             let platform_reserve = 3_000_000;  // 30%
             let liquidity_allocation = 4_000_000;  // 40%
 
-            creator_token::create_token<TEST_CREATOR_TOKEN>(
-                TEST_CREATOR_TOKEN {},
+            creator_token::create_token_for_testing<TEST_CREATOR_TOKEN>(
                 8,  // decimals
                 b"TEST",
                 b"Test Creator Token",
@@ -36,6 +36,13 @@ module peoplecoin::creator_token_tests {
                 platform_reserve,
                 liquidity_allocation,
                 5,  // 5 years buyback
+                1000000,  // buyback_start_date (timestamp)
+                3,  // buyback_interval_months
+                100000,  // buyback_amount_per_interval
+                30,  // trading_block_duration_days
+                true,  // vesting_enabled
+                200,  // vesting_monthly_release_bps (2%)
+                4000,  // vesting_total_release_bps (40%)
                 100,  // $1.00 initial price
                 ts::ctx(&mut scenario)
             );
@@ -45,7 +52,7 @@ module peoplecoin::creator_token_tests {
         {
             ts::next_tx(&mut scenario, CREATOR);
 
-            let registry = ts::take_shared<TokenRegistry>(&scenario);
+            let mut registry = ts::take_shared<TokenRegistry>(&scenario);
 
             let (creator, name, symbol, supply, duration, price) = creator_token::get_token_info(&registry);
 
@@ -63,16 +70,17 @@ module peoplecoin::creator_token_tests {
     }
 
     #[test]
+    /// Tests that token creation fails when allocations don't sum to total supply.
+    /// Verifies allocation validation logic and proper error handling.
     #[expected_failure(abort_code = peoplecoin::creator_token::EInvalidAllocation)]
     fun test_create_token_invalid_allocation() {
-        let scenario = ts::begin(CREATOR);
+        let mut scenario = ts::begin(CREATOR);
 
         {
             ts::next_tx(&mut scenario, CREATOR);
 
             // Allocations don't add up to total supply
-            creator_token::create_token<TEST_CREATOR_TOKEN>(
-                TEST_CREATOR_TOKEN {},
+            creator_token::create_token_for_testing<TEST_CREATOR_TOKEN>(
                 8,
                 b"TEST",
                 b"Test Creator Token",
@@ -83,7 +91,14 @@ module peoplecoin::creator_token_tests {
                 3_000_000,   // reserve
                 3_000_000,   // liquidity - should be 4M!
                 5,
-                100,
+                1000000,  // buyback_start_date
+                3,  // buyback_interval_months
+                100000,  // buyback_amount_per_interval
+                30,  // trading_block_duration_days
+                true,  // vesting_enabled
+                200,  // vesting_monthly_release_bps
+                4000,  // vesting_total_release_bps
+                100,  // initial_price
                 ts::ctx(&mut scenario)
             );
         };
@@ -92,15 +107,16 @@ module peoplecoin::creator_token_tests {
     }
 
     #[test]
+    /// Tests the is_creator() function for creator verification.
+    /// Verifies correct identification of token creator vs other addresses.
     fun test_is_creator() {
-        let scenario = ts::begin(CREATOR);
+        let mut scenario = ts::begin(CREATOR);
 
         // Create token
         {
             ts::next_tx(&mut scenario, CREATOR);
 
-            creator_token::create_token<TEST_CREATOR_TOKEN>(
-                TEST_CREATOR_TOKEN {},
+            creator_token::create_token_for_testing<TEST_CREATOR_TOKEN>(
                 8,
                 b"TEST",
                 b"Test Token",
@@ -111,7 +127,14 @@ module peoplecoin::creator_token_tests {
                 3_000_000,
                 4_000_000,
                 5,
-                100,
+                1000000,  // buyback_start_date
+                3,  // buyback_interval_months
+                100000,  // buyback_amount_per_interval
+                30,  // trading_block_duration_days
+                true,  // vesting_enabled
+                200,  // vesting_monthly_release_bps
+                4000,  // vesting_total_release_bps
+                100,  // initial_price
                 ts::ctx(&mut scenario)
             );
         };
@@ -120,7 +143,7 @@ module peoplecoin::creator_token_tests {
         {
             ts::next_tx(&mut scenario, CREATOR);
 
-            let registry = ts::take_shared<TokenRegistry>(&scenario);
+            let mut registry = ts::take_shared<TokenRegistry>(&scenario);
 
             assert!(creator_token::is_creator(&registry, CREATOR), 0);
             assert!(!creator_token::is_creator(&registry, INVESTOR), 1);

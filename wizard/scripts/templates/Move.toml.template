@@ -1,0 +1,11 @@
+[package]
+name = "{{packageName}}"
+version = "1.0.0"
+edition = "2024.beta"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "{{suiRevision}}" }
+PeopleCoin = { local = "{{peoplecoinPath}}" }
+
+[addresses]
+{{packageName}} = "0x0"

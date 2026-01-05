@@ -27,6 +27,7 @@ module peoplecoin::amm {
     const EInvalidRatio: u64 = 3;
     const EZeroAmount: u64 = 4;
     const EPoolAlreadyExists: u64 = 5;
+    const ECreatorTradingBlocked: u64 = 6;
 
     /// Constants
     const FEE_DENOMINATOR: u64 = 10000;  // 0.5% = 50/10000
@@ -36,7 +37,7 @@ module peoplecoin::amm {
     const MINIMUM_LIQUIDITY: u64 = 1000;  // Prevent division by zero
 
     /// Liquidity Pool for a creator token
-    struct LiquidityPool<phantom T> has key {
+    public struct LiquidityPool<phantom T> has key {
         id: UID,
         token_registry_id: ID,
 
@@ -64,20 +65,20 @@ module peoplecoin::amm {
     }
 
     /// LP (Liquidity Provider) token
-    struct LPToken<phantom T> has key, store {
+    public struct LPToken<phantom T> has key, store {
         id: UID,
         pool_id: ID,
         amount: u64,
     }
 
     /// Pool registry (tracks all pools)
-    struct PoolRegistry has key {
+    public struct PoolRegistry has key {
         id: UID,
         pools: vector<ID>,
     }
 
     /// Events
-    struct PoolCreated has copy, drop {
+    public struct PoolCreated has copy, drop {
         pool_id: ID,
         token_type: vector<u8>,
         sui_amount: u64,
@@ -85,7 +86,7 @@ module peoplecoin::amm {
         creator: address,
     }
 
-    struct LiquidityAdded has copy, drop {
+    public struct LiquidityAdded has copy, drop {
         pool_id: ID,
         provider: address,
         sui_amount: u64,
@@ -93,7 +94,7 @@ module peoplecoin::amm {
         lp_minted: u64,
     }
 
-    struct LiquidityRemoved has copy, drop {
+    public struct LiquidityRemoved has copy, drop {
         pool_id: ID,
         provider: address,
         sui_amount: u64,
@@ -101,7 +102,7 @@ module peoplecoin::amm {
         lp_burned: u64,
     }
 
-    struct Swap has copy, drop {
+    public struct Swap has copy, drop {
         pool_id: ID,
         trader: address,
         sui_in: u64,
@@ -171,8 +172,8 @@ module peoplecoin::amm {
     /// Add liquidity to an existing pool
     public entry fun add_liquidity<T>(
         pool: &mut LiquidityPool<T>,
-        sui_amount: Coin<SUI>,
-        token_amount: Coin<T>,
+        mut sui_amount: Coin<SUI>,
+        mut token_amount: Coin<T>,
         min_lp_amount: u64,  // Slippage protection
         ctx: &mut TxContext
     ) {
@@ -302,11 +303,23 @@ module peoplecoin::amm {
         pool: &mut LiquidityPool<T>,
         sui_in: Coin<SUI>,
         min_token_out: u64,  // Slippage protection
-        insurance_pool: &mut crate::insurance::InsurancePool,
+        insurance_pool: &mut peoplecoin::insurance::InsurancePool,
+        token_registry: &peoplecoin::creator_token::TokenRegistry,
+        clock: &sui::clock::Clock,
         ctx: &mut TxContext
     ): Coin<T> {
         let sui_amount = coin::value(&sui_in);
         assert!(sui_amount > 0, EZeroAmount);
+
+        // Check if sender is creator and if trading block is active
+        let sender = tx_context::sender(ctx);
+        if (peoplecoin::creator_token::is_creator(token_registry, sender)) {
+            let current_time = sui::clock::timestamp_ms(clock);
+            assert!(
+                peoplecoin::creator_token::can_creator_trade(token_registry, current_time),
+                ECreatorTradingBlocked
+            );
+        };
 
         let sui_reserve = balance::value(&pool.sui_reserve);
         let token_reserve = balance::value(&pool.token_reserve);
@@ -324,18 +337,17 @@ module peoplecoin::amm {
         let insurance_fee = (fee_sui * INSURANCE_FEE_BPS) / TRADING_FEE_BPS;
         let lp_fee = fee_sui - insurance_fee;
 
+        // Convert SUI to balance first
+        let mut sui_balance = coin::into_balance(sui_in);
+
         // Extract insurance fee and send to insurance pool
-        let insurance_fee_balance = balance::split(
-            &mut coin::into_balance(sui_in),
-            insurance_fee
-        );
-        crate::insurance::add_insurance_funds(
+        let insurance_fee_balance = balance::split(&mut sui_balance, insurance_fee);
+        peoplecoin::insurance::add_insurance_funds(
             insurance_pool,
             coin::from_balance(insurance_fee_balance, ctx)
         );
 
         // Add SUI (minus insurance fee) to pool
-        let sui_balance = coin::into_balance(sui_in);
         balance::join(&mut pool.sui_reserve, sui_balance);
 
         // Remove tokens from pool
@@ -365,7 +377,7 @@ module peoplecoin::amm {
         pool: &mut LiquidityPool<T>,
         token_in: Coin<T>,
         min_sui_out: u64,  // Slippage protection
-        insurance_pool: &mut crate::insurance::InsurancePool,
+        insurance_pool: &mut peoplecoin::insurance::InsurancePool,
         ctx: &mut TxContext
     ): Coin<SUI> {
         let token_amount = coin::value(&token_in);
@@ -416,10 +428,20 @@ module peoplecoin::amm {
         pool: &mut LiquidityPool<T>,
         sui_in: Coin<SUI>,
         min_token_out: u64,
-        insurance_pool: &mut crate::insurance::InsurancePool,
+        insurance_pool: &mut peoplecoin::insurance::InsurancePool,
+        token_registry: &peoplecoin::creator_token::TokenRegistry,
+        clock: &sui::clock::Clock,
         ctx: &mut TxContext
     ) {
-        let token_out = swap_sui_for_token(pool, sui_in, min_token_out, insurance_pool, ctx);
+        let token_out = swap_sui_for_token(
+            pool,
+            sui_in,
+            min_token_out,
+            insurance_pool,
+            token_registry,
+            clock,
+            ctx
+        );
         transfer::public_transfer(token_out, tx_context::sender(ctx));
     }
 
@@ -428,7 +450,7 @@ module peoplecoin::amm {
         pool: &mut LiquidityPool<T>,
         token_in: Coin<T>,
         min_sui_out: u64,
-        insurance_pool: &mut crate::insurance::InsurancePool,
+        insurance_pool: &mut peoplecoin::insurance::InsurancePool,
         ctx: &mut TxContext
     ) {
         let sui_out = swap_token_for_sui(pool, token_in, min_sui_out, insurance_pool, ctx);

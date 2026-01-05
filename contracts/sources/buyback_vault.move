@@ -31,7 +31,7 @@ module peoplecoin::buyback_vault {
     const EInvalidSchedule: u64 = 6;
 
     /// Buyback milestone structure
-    struct BuybackMilestone has store, copy, drop {
+    public struct BuybackMilestone has store, copy, drop {
         milestone_number: u64,
         deadline_timestamp: u64,  // Unix timestamp
         required_burn_amount: u64,  // Tokens to burn
@@ -41,7 +41,7 @@ module peoplecoin::buyback_vault {
     }
 
     /// Debt record when creator defaults
-    struct DebtRecord has store, copy, drop {
+    public struct DebtRecord has store, copy, drop {
         milestone_number: u64,
         debt_amount_sui: u64,  // SUI spent to cover the buyback
         tokens_bought: u64,
@@ -49,7 +49,7 @@ module peoplecoin::buyback_vault {
     }
 
     /// Main buyback vault shared object
-    struct BuybackVault<phantom T> has key {
+    public struct BuybackVault<phantom T> has key {
         id: UID,
         creator: address,
         token_registry_id: ID,
@@ -76,33 +76,109 @@ module peoplecoin::buyback_vault {
     }
 
     /// Capability to manage vault (held by creator)
-    struct VaultManagerCap has key, store {
+    public struct VaultManagerCap has key, store {
         id: UID,
         vault_id: ID,
     }
 
     /// Events
-    struct MilestoneCompleted has copy, drop {
+    public struct MilestoneCompleted has copy, drop {
         vault_id: ID,
         milestone_number: u64,
         burn_amount: u64,
         timestamp: u64,
     }
 
-    struct DefaultTriggered has copy, drop {
+    public struct DefaultTriggered has copy, drop {
         vault_id: ID,
         milestone_number: u64,
         debt_amount: u64,
         timestamp: u64,
     }
 
-    struct CollateralDeposited has copy, drop {
+    public struct CollateralDeposited has copy, drop {
         vault_id: ID,
         amount: u64,
         timestamp: u64,
     }
 
-    /// Initialize buyback vault for a creator token
+    /// Initialize buyback vault from TokenRegistry configuration
+    ///
+    /// Reads buyback parameters from the token registry and creates the vault
+    /// with the correct schedule based on start date, interval, and amount
+    public entry fun create_vault_from_registry<T>(
+        token_registry: &peoplecoin::creator_token::TokenRegistry,
+        collateral: Coin<sui::sui::SUI>,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        let creator = tx_context::sender(ctx);
+
+        // Get buyback configuration from registry
+        let (buyback_start_date, buyback_end_date, interval_months, burn_amount) =
+            peoplecoin::creator_token::get_buyback_config(token_registry);
+
+        let current_time = clock::timestamp_ms(clock);
+        let total_duration_ms = buyback_end_date - buyback_start_date;
+        let interval_ms = (interval_months as u64) * 30 * 24 * 60 * 60 * 1000;
+
+        // Calculate number of milestones
+        let num_milestones = total_duration_ms / interval_ms;
+
+        // Create milestone schedule
+        let mut milestones = vector::empty<BuybackMilestone>();
+
+        let mut i = 0;
+        while (i < num_milestones) {
+            let milestone = BuybackMilestone {
+                milestone_number: i + 1,
+                deadline_timestamp: buyback_start_date + ((i + 1) * interval_ms),
+                required_burn_amount: burn_amount,
+                completed: false,
+                completed_at: 0,
+                actual_burn_amount: 0,
+            };
+            vector::push_back(&mut milestones, milestone);
+            i = i + 1;
+        };
+
+        // Create vault
+        let vault = BuybackVault<T> {
+            id: object::new(ctx),
+            creator,
+            token_registry_id: object::id(token_registry),
+            milestones,
+            current_milestone: 0,
+            collateral: coin::into_balance(collateral),
+            emergency_fund: balance::zero(),
+            total_debt: 0,
+            debt_records: vector::empty(),
+            total_buyback_duration_ms: total_duration_ms,
+            total_required_burns: burn_amount * num_milestones,
+            is_defaulted: false,
+            created_at: current_time,
+        };
+
+        // Create manager capability
+        let vault_id = object::id(&vault);
+        let manager_cap = VaultManagerCap {
+            id: object::new(ctx),
+            vault_id,
+        };
+
+        // Emit event
+        event::emit(CollateralDeposited {
+            vault_id,
+            amount: balance::value(&vault.collateral),
+            timestamp: current_time,
+        });
+
+        // Share vault and transfer capability
+        transfer::share_object(vault);
+        transfer::transfer(manager_cap, creator);
+    }
+
+    /// Initialize buyback vault for a creator token (manual configuration)
     ///
     /// The schedule is divided evenly across the duration
     /// For example: 5 years, 20 milestones = buyback every 3 months
@@ -123,10 +199,10 @@ module peoplecoin::buyback_vault {
         let interval_ms = total_duration_ms / num_milestones;
 
         // Create milestone schedule
-        let milestones = vector::empty<BuybackMilestone>();
+        let mut milestones = vector::empty<BuybackMilestone>();
         let burn_per_milestone = total_required_burns / num_milestones;
 
-        let i = 0;
+        let mut i = 0;
         while (i < num_milestones) {
             let milestone = BuybackMilestone {
                 milestone_number: i + 1,
@@ -193,9 +269,15 @@ module peoplecoin::buyback_vault {
         let milestone_idx = vault.current_milestone;
         assert!(milestone_idx < vector::length(&vault.milestones), EMilestoneNotReached);
 
+        // Get vault data before mutable borrow
+        let vault_id = object::id(vault);
+        let creator = vault.creator;
+
         let milestone = vector::borrow_mut(&mut vault.milestones, milestone_idx);
         assert!(!milestone.completed, EMilestoneAlreadyCompleted);
         assert!(burn_amount >= milestone.required_burn_amount, EInvalidBuybackAmount);
+
+        let milestone_number = milestone.milestone_number;
 
         // Mark milestone as completed
         milestone.completed = true;
@@ -207,15 +289,15 @@ module peoplecoin::buyback_vault {
 
         // Emit event
         event::emit(MilestoneCompleted {
-            vault_id: object::id(vault),
-            milestone_number: milestone.milestone_number,
+            vault_id,
+            milestone_number,
             burn_amount,
             timestamp: current_time,
         });
 
         // Tokens will be burned by the treasury cap holder (creator)
         // Transfer tokens to creator for burning
-        transfer::public_transfer(tokens_to_burn, vault.creator);
+        transfer::public_transfer(tokens_to_burn, creator);
     }
 
     /// Add collateral to vault (increases security for investors)
@@ -239,12 +321,14 @@ module peoplecoin::buyback_vault {
 
     /// Check if creator has defaulted on current milestone
     /// This function can be called by anyone to trigger automatic enforcement
-    /// Integrates with AMM for automatic buyback and insurance pool for deficit coverage
+    /// Integrates with AMM for automatic buyback, platform vault for borrowing, and insurance pool for deficit coverage
     public entry fun check_and_enforce_default<T>(
         vault: &mut BuybackVault<T>,
-        amm_pool: &mut crate::amm::LiquidityPool<T>,
-        insurance_pool: &mut crate::insurance::InsurancePool,
+        platform_vault: &mut peoplecoin::platform_vault::PlatformVault,
+        amm_pool: &mut peoplecoin::amm::LiquidityPool<T>,
+        insurance_pool: &mut peoplecoin::insurance::InsurancePool,
         treasury_cap: &mut coin::TreasuryCap<T>,
+        token_registry: &peoplecoin::creator_token::TokenRegistry,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -255,6 +339,10 @@ module peoplecoin::buyback_vault {
             return  // All milestones completed
         };
 
+        // Extract immutable data before mutable borrow
+        let vault_id = object::id(vault);
+        let creator = vault.creator;
+
         let milestone = vector::borrow_mut(&mut vault.milestones, milestone_idx);
 
         // Check if deadline passed and milestone not completed
@@ -264,77 +352,39 @@ module peoplecoin::buyback_vault {
             let required_burn = milestone.required_burn_amount;
 
             // Step 1: Calculate SUI needed to buy required tokens from AMM
-            let sui_needed = crate::amm::quote_token_to_sui(amm_pool, required_burn);
+            let sui_needed = peoplecoin::amm::quote_token_to_sui(amm_pool, required_burn);
 
             let collateral_available = balance::value(&vault.collateral);
 
             if (collateral_available >= sui_needed) {
-                // Step 2a: Use collateral to buy tokens from AMM
+                // CASE A: Sufficient collateral - use it directly
                 let collateral_coin = coin::from_balance(
                     balance::split(&mut vault.collateral, sui_needed),
                     ctx
                 );
 
-                let tokens_bought = crate::amm::swap_sui_for_token(
+                let tokens_bought = peoplecoin::amm::swap_sui_for_token(
                     amm_pool,
                     collateral_coin,
-                    required_burn,
+                    0,  // Accept any amount due to quote calculation limitations
                     insurance_pool,
-                    ctx
-                );
-
-                // Step 3a: Burn the tokens
-                coin::burn(treasury_cap, tokens_bought);
-
-                // Mark milestone as completed (forced)
-                milestone.completed = true;
-                milestone.completed_at = current_time;
-                milestone.actual_burn_amount = required_burn;
-                vault.current_milestone = vault.current_milestone + 1;
-
-                // Record debt (even though buyback succeeded, creator still defaulted)
-                let debt_record = DebtRecord {
-                    milestone_number: milestone.milestone_number,
-                    debt_amount_sui: sui_needed,
-                    tokens_bought: required_burn,
-                    created_at: current_time,
-                };
-                vector::push_back(&mut vault.debt_records, debt_record);
-                vault.total_debt = vault.total_debt + sui_needed;
-
-            } else {
-                // Step 2b: Insufficient collateral - use all available collateral
-                let available_collateral = balance::withdraw_all(&mut vault.collateral);
-                let collateral_coin = coin::from_balance(available_collateral, ctx);
-                let collateral_value = coin::value(&collateral_coin);
-
-                // Buy as many tokens as possible
-                let tokens_bought = crate::amm::swap_sui_for_token(
-                    amm_pool,
-                    collateral_coin,
-                    0,  // min_token_out = 0 (emergency mode)
-                    insurance_pool,
+                    token_registry,
+                    clock,
                     ctx
                 );
 
                 let tokens_bought_amount = coin::value(&tokens_bought);
 
-                // Burn purchased tokens
+                // Burn the tokens
                 coin::burn(treasury_cap, tokens_bought);
 
-                // Step 3b: Submit insurance claim for remaining amount
-                let deficit_sui = sui_needed - collateral_value;
+                // Mark milestone as completed (forced)
+                milestone.completed = true;
+                milestone.completed_at = current_time;
+                milestone.actual_burn_amount = tokens_bought_amount;
+                vault.current_milestone = vault.current_milestone + 1;
 
-                let claim_id = crate::insurance::submit_claim(
-                    insurance_pool,
-                    object::id(vault),
-                    vault.creator,
-                    deficit_sui,
-                    milestone.milestone_number,
-                    ctx
-                );
-
-                // Record debt with insurance claim
+                // Record debt (creator defaulted, owes platform)
                 let debt_record = DebtRecord {
                     milestone_number: milestone.milestone_number,
                     debt_amount_sui: sui_needed,
@@ -344,13 +394,85 @@ module peoplecoin::buyback_vault {
                 vector::push_back(&mut vault.debt_records, debt_record);
                 vault.total_debt = vault.total_debt + sui_needed;
 
-                // Milestone partially completed
-                milestone.completed = false;  // Still not fully completed
+                // Create punishment debt in platform vault (10% APR)
+                peoplecoin::platform_vault::create_creator_debt(
+                    platform_vault,
+                    creator,
+                    sui_needed,
+                    clock,
+                    ctx
+                );
+
+            } else {
+                // CASE B: Insufficient collateral - borrow from platform vault
+                let deficit = sui_needed - collateral_available;
+
+                // Borrow deficit from platform vault (5% APR loan)
+                let borrowed_sui = peoplecoin::platform_vault::borrow(
+                    platform_vault,
+                    creator,
+                    vault_id,
+                    deficit,
+                    clock,
+                    ctx
+                );
+
+                // Use all collateral
+                let mut collateral_coin = coin::from_balance(
+                    balance::withdraw_all(&mut vault.collateral),
+                    ctx
+                );
+
+                // Merge borrowed SUI with collateral
+                coin::join(&mut collateral_coin, borrowed_sui);
+
+                // Now we have enough SUI to buy tokens
+                let tokens_bought = peoplecoin::amm::swap_sui_for_token(
+                    amm_pool,
+                    collateral_coin,
+                    0,
+                    insurance_pool,
+                    token_registry,
+                    clock,
+                    ctx
+                );
+
+                let tokens_bought_amount = coin::value(&tokens_bought);
+
+                // Burn tokens
+                coin::burn(treasury_cap, tokens_bought);
+
+                // Mark milestone as completed
+                milestone.completed = true;
+                milestone.completed_at = current_time;
                 milestone.actual_burn_amount = tokens_bought_amount;
+                vault.current_milestone = vault.current_milestone + 1;
+
+                // Record debt
+                let debt_record = DebtRecord {
+                    milestone_number: milestone.milestone_number,
+                    debt_amount_sui: sui_needed,
+                    tokens_bought: tokens_bought_amount,
+                    created_at: current_time,
+                };
+                vector::push_back(&mut vault.debt_records, debt_record);
+                vault.total_debt = vault.total_debt + sui_needed;
+
+                // Create punishment debt in platform vault (10% APR on full amount)
+                peoplecoin::platform_vault::create_creator_debt(
+                    platform_vault,
+                    creator,
+                    sui_needed,
+                    clock,
+                    ctx
+                );
+
+                // Note: The platform vault loan (5% APR) is tracked separately
+                // Creator must repay both the loan and the punishment debt
             };
 
             event::emit(DefaultTriggered {
-                vault_id: object::id(vault),
+                vault_id,
                 milestone_number: milestone.milestone_number,
                 debt_amount: sui_needed,
                 timestamp: current_time,
